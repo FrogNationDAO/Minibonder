@@ -2,15 +2,17 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Minibonder
  * @dev A minibonder contract that permits the vesting of FRG in return for FTM
  * a an optional discount.
  */
-contract Minibonder {
+contract Minibonder is Ownable {
 
     IERC20 public vestedAsset;
+    uint256 public totalVested;
     uint256 public vestPeriod;
     uint256 public vestDiscount;
 
@@ -58,6 +60,7 @@ contract Minibonder {
         vestedInfo.releaseTimestamp = block.timestamp + vestPeriod;
 
         vestedBalances[msg.sender] = vestedInfo;
+        totalVested += amountToVest;
         return true;
     }
 
@@ -67,12 +70,15 @@ contract Minibonder {
     function release() external returns (bool) {
         require(vestedBalances[msg.sender].vester == msg.sender, "Minibonder: Non vested");
         require(vestedBalances[msg.sender].releaseTimestamp <= block.timestamp, "Minibonder: Release timestamp hasn't been reached");
+
         uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
         amountToReturn = vestedBalances[msg.sender].balance + amountToReturn;
         vestedBalances[msg.sender].balance = 0;
 
         require(vestedAsset.transfer(msg.sender, amountToReturn));
         emit Withdraw(msg.sender, amountToReturn);
+
+        totalVested -= amountToReturn;
         return true;
     }
 
@@ -83,5 +89,23 @@ contract Minibonder {
    */
     function percentage(uint256 number, uint256 basisPoints) internal pure returns (uint256) {
         return number * basisPoints / 10000;
+    }
+
+  /**
+   * @dev Sends the FTM to another address in case of an emergency
+   * Takes into account vested FTM and ignores it
+   */
+    function softWithdraw() external onlyOwner {
+        uint256 contractBalance = address(this).balance;
+        payable(msg.sender).transfer(contractBalance - totalVested);
+    }
+
+  /**
+   * @dev Sends the FTM to another address in case of an emergency
+   */
+    function emergencyWithdraw() external onlyOwner {
+        uint256 contractBalance = address(this).balance;
+        payable(msg.sender).transfer(contractBalance);
+
     }
 }
