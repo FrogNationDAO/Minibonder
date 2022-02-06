@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Minibonder
@@ -11,6 +12,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
  * a an optional discount.
  */
 contract Minibonder is Ownable, Pausable {
+    using SafeERC20 for IERC20;
 
     IERC20 public vestedAsset;
     uint256 public totalVested;
