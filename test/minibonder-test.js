@@ -72,6 +72,10 @@ describe("Minibonder", function () {
     it("Should successfully deposit", async function () {
         let amount = ethers.utils.parseUnits("500", 18);
         await minibonder.vest({ value: amount });
+        let userVestedInfo = await minibonder.vestedBalances(deployer.address);
+        let balanceVested = userVestedInfo.balance;
+
+        await expect(balanceVested).to.be.equal(amount.toString());
     });
 
     it("Should revert due to non-ownership of vest", async function () {
@@ -83,8 +87,41 @@ describe("Minibonder", function () {
     });
 
     it("Should succeed releasing from vest", async function () {
+        let userTokenBalance = await FRG.balanceOf(deployer.address);
         await mineBlocks(60);
         await minibonder.release();
+        userTokenBalance = await FRG.balanceOf(deployer.address);
+
+        let amount = ethers.utils.parseUnits("1550", 18);
+        let userBalance = await FRG.balanceOf(deployer.address);
+        await expect(userBalance).to.equal(amount);
+
+        //console.log(await FRG.balanceOf(minibonder.address));
+        //console.log(await ethers.provider.getBalance(deployer.address));
+    });
+
+    it("Should do an FTM soft withdraw", async function () {
+        await minibonder.softWithdrawFTM();
+        let amount = ethers.utils.parseUnits("450", 18);
+
+        expect(await ethers.provider.getBalance(minibonder.address)).to.equal(amount);
+    });
+
+    it("Should do an FRG soft withdraw", async function () {
+        let amount = ethers.utils.parseUnits("100", 18);
+        await minibonder.vest({ value: amount });
+        let userVestedInfo = await minibonder.vestedBalances(deployer.address);
+        let balanceVested = userVestedInfo.balance;
+
+        await minibonder.softWithdrawVestedAsset();
+        amount = ethers.utils.parseUnits("110", 18);
+        expect(await FRG.balanceOf(minibonder.address)).to.equal(amount);
+    });
+
+    it("Should do an emergency withdraw", async function () {
+        await minibonder.emergencyWithdraw();
+        expect(await FRG.balanceOf(minibonder.address)).to.equal(0);
+        expect(await ethers.provider.getBalance(minibonder.address)).to.equal(0);
     });
 
 });

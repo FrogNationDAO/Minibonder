@@ -13,6 +13,7 @@ contract Minibonder is Ownable {
 
     IERC20 public vestedAsset;
     uint256 public totalVested;
+    uint256 public totalEligible;
     uint256 public vestPeriod;
     uint256 public vestDiscount;
 
@@ -61,6 +62,10 @@ contract Minibonder is Ownable {
 
         vestedBalances[msg.sender] = vestedInfo;
         totalVested += amountToVest;
+
+        uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
+        amountToReturn = vestedBalances[msg.sender].balance + amountToReturn;
+        totalEligible += amountToReturn;
         return true;
     }
 
@@ -72,13 +77,14 @@ contract Minibonder is Ownable {
         require(vestedBalances[msg.sender].releaseTimestamp <= block.timestamp, "Minibonder: Release timestamp hasn't been reached");
 
         uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
+        totalVested -= amountToReturn;
         amountToReturn = vestedBalances[msg.sender].balance + amountToReturn;
+        totalEligible -= amountToReturn;
         vestedBalances[msg.sender].balance = 0;
 
         require(vestedAsset.transfer(msg.sender, amountToReturn));
         emit Withdraw(msg.sender, amountToReturn);
 
-        totalVested -= amountToReturn;
         return true;
     }
 
@@ -92,20 +98,36 @@ contract Minibonder is Ownable {
     }
 
   /**
-   * @dev Sends the FTM to another address in case of an emergency
+   * @dev Sends FTM to another address in case of an emergency
    * Takes into account vested FTM and ignores it
    */
-    function softWithdraw() external onlyOwner {
+    function softWithdrawFTM() external onlyOwner {
         uint256 contractBalance = address(this).balance;
-        payable(msg.sender).transfer(contractBalance - totalVested);
+        if (contractBalance > 0) payable(msg.sender).transfer(contractBalance - totalVested);
     }
 
   /**
-   * @dev Sends the FTM to another address in case of an emergency
+   * @dev Sends vestedAsset to another address in case of an emergency
+   * Takes into account totalEligible and ignores it
+   */
+    function softWithdrawVestedAsset() external onlyOwner {
+        uint256 contractTokenBalance = vestedAsset.balanceOf(address(this));
+        if (contractTokenBalance > 0) vestedAsset.transfer(msg.sender, contractTokenBalance - totalEligible);
+    }
+
+  /**
+   * @dev Sends FTM and vestedAsset to another address in case of an emergency
    */
     function emergencyWithdraw() external onlyOwner {
         uint256 contractBalance = address(this).balance;
-        payable(msg.sender).transfer(contractBalance);
+        uint256 contractTokenBalance = vestedAsset.balanceOf(address(this));
+        if (contractTokenBalance > 0) vestedAsset.transfer(msg.sender, contractTokenBalance);
+        if (contractBalance > 0) payable(msg.sender).transfer(contractBalance);
+    }
 
+    function emergencyThirdTokenWithdraw(address _token) external onlyOwner {
+        IERC20 token = IERC20(_token);
+        uint256 contractTokenBalance = token.balanceOf(address(this));
+        if (contractTokenBalance > 0) token.transfer(msg.sender, contractTokenBalance);
     }
 }
