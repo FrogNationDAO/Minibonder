@@ -92,6 +92,7 @@ describe("Minibonder", function () {
 
         let amount = ethers.utils.parseUnits("1550", 18);
         let userBalance = await FRG.balanceOf(deployer.address);
+
         await expect(userBalance).to.equal(amount);
     });
 
@@ -99,7 +100,7 @@ describe("Minibonder", function () {
         await minibonder.softWithdrawFTM();
         let amount = ethers.utils.parseUnits("450", 18);
 
-        expect(await ethers.provider.getBalance(minibonder.address)).to.equal(amount);
+        expect(await ethers.provider.getBalance(minibonder.address)).to.equal(0);
     });
 
     it("Should do an FRG soft withdraw", async function () {
@@ -119,4 +120,31 @@ describe("Minibonder", function () {
         expect(await ethers.provider.getBalance(minibonder.address)).to.equal(0);
     });
 
+    it("Should successfully deposit as Bob", async function () {
+        let amount = ethers.utils.parseUnits("100", 18);
+        await FRG.transfer(minibonder.address, amount);
+        await minibonder.connect(bob).vest({ value: amount });
+        let userVestedInfo = await minibonder.connect(bob).vestedBalances(deployer.address);
+        let balanceVested = userVestedInfo.balance;
+
+        await expect(balanceVested).to.be.equal(amount.toString());
+    });
+
+    it("Should do FTM softWithdraw", async function () {
+        let amount = ethers.utils.parseUnits("1000", 18);
+        let tx = await deployer.sendTransaction({
+            to: minibonder.address,
+            value: amount
+        });
+        await minibonder.softWithdrawFTM();
+        let totalEligible = await minibonder.totalEligible();
+        amount = ethers.utils.parseUnits("220", 18);
+        expect(totalEligible).to.equal(amount);
+    });
+
+    it("Contract should still have remaining FTM", async function () {
+        let amount = ethers.utils.parseUnits("200", 18);
+        let remainingFTM = await ethers.provider.getBalance(minibonder.address);
+        expect(remainingFTM).to.equal(amount);
+    });
 });
