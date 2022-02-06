@@ -35,8 +35,6 @@ describe("Minibonder", function () {
         let accounts = await ethers.getSigners();
         deployer = accounts[0];
         bob = accounts[1];
-        console.log(deployer.address);
-
 
         let mintAmount = ethers.utils.parseUnits("10000", 18);
         FRG = await deployContract(
@@ -95,9 +93,6 @@ describe("Minibonder", function () {
         let amount = ethers.utils.parseUnits("1550", 18);
         let userBalance = await FRG.balanceOf(deployer.address);
         await expect(userBalance).to.equal(amount);
-
-        //console.log(await FRG.balanceOf(minibonder.address));
-        //console.log(await ethers.provider.getBalance(deployer.address));
     });
 
     it("Should do an FTM soft withdraw", async function () {
