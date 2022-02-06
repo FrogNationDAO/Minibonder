@@ -37,8 +37,7 @@ contract Minibonder is Ownable, Pausable {
         vestDiscount = _vestDiscount;
     }
 
-    function vest(
-    ) external payable whenNotPaused {
+    function vest() external payable whenNotPaused {
         _vest(msg.sender);
         emit Deposit(msg.sender, msg.value, vestPeriod);
     }
