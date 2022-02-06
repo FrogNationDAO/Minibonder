@@ -103,7 +103,9 @@ contract Minibonder is Ownable {
    */
     function softWithdrawFTM() external onlyOwner {
         uint256 contractBalance = address(this).balance;
-        if (contractBalance > 0) payable(msg.sender).transfer(contractBalance - totalVested);
+        require(contractBalance > 0, "Minibonder: Contract holds no FTM");
+
+        payable(msg.sender).transfer(contractBalance - totalVested);
     }
 
   /**
@@ -112,7 +114,9 @@ contract Minibonder is Ownable {
    */
     function softWithdrawVestedAsset() external onlyOwner {
         uint256 contractTokenBalance = vestedAsset.balanceOf(address(this));
-        if (contractTokenBalance > 0) vestedAsset.transfer(msg.sender, contractTokenBalance - totalEligible);
+        require(contractTokenBalance > 0, "Minibonder: Contract holds no underlying asset");
+
+        vestedAsset.transfer(msg.sender, contractTokenBalance - totalEligible);
     }
 
   /**
