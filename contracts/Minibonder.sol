@@ -82,8 +82,8 @@ contract Minibonder is Ownable, Pausable {
             "Minibonder: Release timestamp hasn't been reached"
         );
 
+        totalVested -= vestedBalances[msg.sender].balance;
         uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
-        totalVested -= amountToReturn;
         amountToReturn = vestedBalances[msg.sender].balance + amountToReturn;
         totalEligible -= amountToReturn;
         vestedBalances[msg.sender].balance = 0;
