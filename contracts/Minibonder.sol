@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
  * @title Minibonder
  * @dev A minibonder contract that permits the vesting of FRG in return for FTM
  * a an optional discount.
  */
-contract Minibonder is Ownable {
+contract Minibonder is Ownable, Pausable {
 
     IERC20 public vestedAsset;
     uint256 public totalVested;
@@ -37,7 +38,7 @@ contract Minibonder is Ownable {
     }
 
     function vest(
-    ) external payable {
+    ) external payable whenNotPaused {
         _vest(msg.sender);
         emit Deposit(msg.sender, msg.value, vestPeriod);
     }
@@ -69,10 +70,12 @@ contract Minibonder is Ownable {
         return true;
     }
 
+    receive() external payable {}
+
   /**
    * @notice Transfers vested tokens to vester.
    */
-    function release() external returns (bool) {
+    function release() external whenNotPaused returns (bool) {
         require(vestedBalances[msg.sender].vester == msg.sender, "Minibonder: Non vested");
         require(vestedBalances[msg.sender].releaseTimestamp <= block.timestamp, "Minibonder: Release timestamp hasn't been reached");
 
@@ -91,7 +94,7 @@ contract Minibonder is Ownable {
   /**
    * @dev Calculates the amount that has already vested but hasn't been released yet.
    * @param number Number to derive percentage from
-   * @param basisPoints perc in basisPoints (preferably 10000ths)
+   * @param basisPoints perc in basisPoints
    */
     function percentage(uint256 number, uint256 basisPoints) internal pure returns (uint256) {
         return number * basisPoints / 10000;
@@ -129,6 +132,9 @@ contract Minibonder is Ownable {
         if (contractBalance > 0) payable(msg.sender).transfer(contractBalance);
     }
 
+  /**
+   * @dev Sends unknown tokens to another address in case of an emergency
+   */
     function emergencyThirdTokenWithdraw(address _token) external onlyOwner {
         IERC20 token = IERC20(_token);
         uint256 contractTokenBalance = token.balanceOf(address(this));
