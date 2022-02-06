@@ -46,7 +46,7 @@ contract Minibonder is Ownable, Pausable {
     }
 
   /**
-   * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
+   * @dev Creates a vesting contract that vests balance of vestedAsset token to the
    * _vester.
    * @param vester address of the beneficiary to whom vested tokens are transferred
    */
@@ -139,7 +139,7 @@ contract Minibonder is Ownable, Pausable {
   /**
    * @dev Sends unknown tokens to another address in case of an emergency
    */
-    function emergencyThirdTokenWithdraw(address _token) external onlyOwner {
+    function emergencyTokenWithdraw(address _token) external onlyOwner {
         IERC20 token = IERC20(_token);
         uint256 contractTokenBalance = token.balanceOf(address(this));
         if (contractTokenBalance > 0) token.transfer(msg.sender, contractTokenBalance);
