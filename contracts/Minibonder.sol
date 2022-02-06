@@ -75,7 +75,7 @@ contract Minibonder is Ownable, Pausable {
     receive() external payable {}
 
   /**
-   * @notice Transfers vested tokens to vester.
+   * @dev Transfers vested tokens to vester.
    */
     function release() external whenNotPaused returns (bool) {
         require(vestedBalances[msg.sender].vester == msg.sender, "Minibonder: Non vested");
@@ -84,15 +84,14 @@ contract Minibonder is Ownable, Pausable {
             "Minibonder: Release timestamp hasn't been reached"
         );
 
-        totalVested -= vestedBalances[msg.sender].balance;
         uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
         amountToReturn = vestedBalances[msg.sender].balance + amountToReturn;
         totalEligible -= amountToReturn;
+        totalVested -= vestedBalances[msg.sender].balance;
         vestedBalances[msg.sender].balance = 0;
 
         emit Withdraw(msg.sender, amountToReturn);
         require(vestedAsset.transfer(msg.sender, amountToReturn));
-
         return true;
     }
 
