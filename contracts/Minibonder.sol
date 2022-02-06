@@ -77,7 +77,10 @@ contract Minibonder is Ownable, Pausable {
    */
     function release() external whenNotPaused returns (bool) {
         require(vestedBalances[msg.sender].vester == msg.sender, "Minibonder: Non vested");
-        require(vestedBalances[msg.sender].releaseTimestamp <= block.timestamp, "Minibonder: Release timestamp hasn't been reached");
+        require(
+            vestedBalances[msg.sender].releaseTimestamp <= block.timestamp,
+            "Minibonder: Release timestamp hasn't been reached"
+        );
 
         uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
         totalVested -= amountToReturn;
@@ -139,5 +142,15 @@ contract Minibonder is Ownable, Pausable {
         IERC20 token = IERC20(_token);
         uint256 contractTokenBalance = token.balanceOf(address(this));
         if (contractTokenBalance > 0) token.transfer(msg.sender, contractTokenBalance);
+    }
+
+  /**
+   * @dev Allows modifying vestingPeriod and vestDiscount
+   * @param _vestPeriod Desired vestPeriod in seconds
+   * @param _vestDiscount Desired bonus percentage
+   */
+    function setBondSettings(uint256 _vestPeriod, uint256 _vestDiscount) external onlyOwner {
+        vestPeriod = _vestPeriod == 1 ? vestPeriod : _vestPeriod;
+        vestDiscount = _vestDiscount == 1 ? vestDiscount : _vestDiscount;
     }
 }
