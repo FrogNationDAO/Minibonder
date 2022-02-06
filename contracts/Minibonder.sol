@@ -18,16 +18,17 @@ contract Minibonder is Ownable, Pausable {
     uint256 public vestPeriod;
     uint256 public vestDiscount;
 
-    struct userVestedInfo {
+    struct UserVestedInfo {
         address vester;
         uint256 balance;
         uint256 releaseTimestamp;
     }
 
-    mapping(address => userVestedInfo) public vestedBalances;
+    mapping(address => UserVestedInfo) public vestedBalances;
 
     event Deposit(address vester, uint256 amount, uint256 releaseTimestamp);
     event Withdraw(address vester, uint256 amount);
+    event SettingsChanged(uint256 vestPeriod, uint256 vestDiscount);
 
     constructor(address _vestedAsset, uint256 _vestPeriod, uint256 _vestDiscount) {
         require(_vestedAsset != address(0), "Minibonder: Vested asset cannot be zero address");
@@ -55,7 +56,7 @@ contract Minibonder is Ownable, Pausable {
         require(amountToVest > 0, "Minibonder: More than 0 FTM required");
         require(amountToVest <= miniBonderBalance, "Minibonder: Reserve insufficient");
 
-        userVestedInfo memory vestedInfo;
+        UserVestedInfo memory vestedInfo;
         vestedInfo.vester = vester;
         vestedInfo.balance += amountToVest;
         vestedInfo.releaseTimestamp = block.timestamp + vestPeriod;
@@ -87,8 +88,8 @@ contract Minibonder is Ownable, Pausable {
         totalEligible -= amountToReturn;
         vestedBalances[msg.sender].balance = 0;
 
-        require(vestedAsset.transfer(msg.sender, amountToReturn));
         emit Withdraw(msg.sender, amountToReturn);
+        require(vestedAsset.transfer(msg.sender, amountToReturn));
 
         return true;
     }
@@ -151,5 +152,6 @@ contract Minibonder is Ownable, Pausable {
     function setBondSettings(uint256 _vestPeriod, uint256 _vestDiscount) external onlyOwner {
         vestPeriod = _vestPeriod == 1 ? vestPeriod : _vestPeriod;
         vestDiscount = _vestDiscount == 1 ? vestDiscount : _vestDiscount;
+        emit SettingsChanged(vestPeriod, vestDiscount);
     }
 }
