@@ -58,16 +58,22 @@ contract Minibonder is Ownable, Pausable {
         require(amountToVest > 0, "Minibonder: More than 0 FTM required");
         require(amountToVest <= miniBonderBalance, "Minibonder: Reserve insufficient");
 
-        UserVestedInfo memory vestedInfo;
-        vestedInfo.vester = vester;
-        vestedInfo.balance += amountToVest;
-        vestedInfo.releaseTimestamp = block.timestamp + vestPeriod;
+        if (vestedBalances[msg.sender].vester == address(0x0)) {
+            UserVestedInfo memory vestedInfo;
+            vestedInfo.vester = vester;
+            vestedInfo.balance += amountToVest;
+            vestedInfo.releaseTimestamp = block.timestamp + vestPeriod;
 
-        vestedBalances[msg.sender] = vestedInfo;
+            vestedBalances[msg.sender] = vestedInfo;
+        } else {
+            vestedBalances[msg.sender].balance += amountToVest;
+            vestedBalances[msg.sender].releaseTimestamp = block.timestamp + vestPeriod;
+        }
+
         totalVested += amountToVest;
 
-        uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
-        amountToReturn = vestedBalances[msg.sender].balance + amountToReturn;
+        uint256 amountToReturn = percentage(amountToVest, vestDiscount);
+        amountToReturn =  msg.value + amountToReturn;
         totalEligible += amountToReturn;
         return true;
     }
@@ -79,6 +85,7 @@ contract Minibonder is Ownable, Pausable {
    */
     function release() external whenNotPaused returns (bool) {
         require(vestedBalances[msg.sender].vester == msg.sender, "Minibonder: Non vested");
+        require(vestedBalances[msg.sender].balance > 0, "Minibonder: Nothing vested");
         require(
             vestedBalances[msg.sender].releaseTimestamp <= block.timestamp,
             "Minibonder: Release timestamp hasn't been reached"
