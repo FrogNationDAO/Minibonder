@@ -54,9 +54,12 @@ contract Minibonder is Ownable, Pausable {
         address vester
     ) internal returns (bool) {
         uint256 amountToVest = msg.value;
-        uint256 miniBonderBalance = vestedAsset.balanceOf(address(this));
         require(amountToVest > 0, "Minibonder: More than 0 FTM required");
-        require(amountToVest <= miniBonderBalance, "Minibonder: Reserve insufficient");
+
+        uint256 miniBonderBalance = vestedAsset.balanceOf(address(this));
+        uint256 amountToReturn = percentage(amountToVest, vestDiscount);
+        amountToReturn =  msg.value + amountToReturn;
+        require(amountToReturn <= miniBonderBalance - totalEligible, "Minibonder: Reserve insufficient");
 
         if (vestedBalances[msg.sender].vester == address(0x0)) {
             UserVestedInfo memory vestedInfo;
@@ -72,8 +75,6 @@ contract Minibonder is Ownable, Pausable {
 
         totalVested += amountToVest;
 
-        uint256 amountToReturn = percentage(amountToVest, vestDiscount);
-        amountToReturn =  msg.value + amountToReturn;
         totalEligible += amountToReturn;
         return true;
     }
