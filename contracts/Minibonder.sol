@@ -163,4 +163,11 @@ contract Minibonder is Ownable, Pausable {
         vestDiscount = _vestDiscount == 1 ? vestDiscount : _vestDiscount;
         emit SettingsChanged(vestPeriod, vestDiscount);
     }
+
+  /**
+   * @dev Toggles whether contract paused
+   */
+    function togglePause() external onlyOwner {
+        paused() == true ? _unpause() : _pause();
+    }
 }
