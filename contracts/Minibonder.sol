@@ -15,7 +15,6 @@ contract Minibonder is Ownable, Pausable {
     using SafeERC20 for IERC20;
 
     IERC20 public vestedAsset;
-    uint256 public totalVested;
     uint256 public totalEligible;
     uint256 public vestPeriod;
     uint256 public vestDiscount;
@@ -73,8 +72,6 @@ contract Minibonder is Ownable, Pausable {
             vestedBalances[msg.sender].releaseTimestamp = block.timestamp + vestPeriod;
         }
 
-        totalVested += amountToVest;
-
         totalEligible += amountToReturn;
         return true;
     }
@@ -95,7 +92,6 @@ contract Minibonder is Ownable, Pausable {
         uint256 amountToReturn = percentage(vestedBalances[msg.sender].balance, vestDiscount);
         amountToReturn = vestedBalances[msg.sender].balance + amountToReturn;
         totalEligible -= amountToReturn;
-        totalVested -= vestedBalances[msg.sender].balance;
         vestedBalances[msg.sender].balance = 0;
 
         emit Withdraw(msg.sender, amountToReturn);
@@ -116,11 +112,11 @@ contract Minibonder is Ownable, Pausable {
    * @dev Sends FTM to another address in case of an emergency
    * Takes into account vested FTM and ignores it
    */
-    function softWithdrawFTM() external onlyOwner {
+    function withdrawFTM() external onlyOwner {
         uint256 contractBalance = address(this).balance;
         require(contractBalance > 0, "Minibonder: Contract holds no FTM");
 
-        payable(msg.sender).transfer(contractBalance - totalVested);
+        payable(msg.sender).transfer(contractBalance);
     }
 
   /**
