@@ -97,7 +97,7 @@ describe("Minibonder", function () {
     });
 
     it("Should do an FTM soft withdraw", async function () {
-        await minibonder.softWithdrawFTM();
+        await minibonder.withdrawFTM();
         let amount = ethers.utils.parseUnits("450", 18);
 
         expect(await ethers.provider.getBalance(minibonder.address)).to.equal(0);
@@ -120,21 +120,14 @@ describe("Minibonder", function () {
         expect(await ethers.provider.getBalance(minibonder.address)).to.equal(0);
     });
 
-    it("Should do FTM softWithdraw", async function () {
+    it("Should withdraw all FTM", async function () {
         let amount = ethers.utils.parseUnits("1000", 18);
         let tx = await deployer.sendTransaction({
             to: minibonder.address,
             value: amount
         });
-        await minibonder.softWithdrawFTM();
-        let totalEligible = await minibonder.totalEligible();
-        amount = ethers.utils.parseUnits("27877.7", 18);
-        expect(totalEligible).to.equal(amount);
-    });
-
-    it("Contract should still have remaining FTM", async function () {
-        let amount = ethers.utils.parseUnits("200", 18);
+        await minibonder.withdrawFTM();
         let remainingFTM = await ethers.provider.getBalance(minibonder.address);
-        expect(remainingFTM).to.not.equal(0);
+        expect(remainingFTM).to.equal(0);
     });
 });
