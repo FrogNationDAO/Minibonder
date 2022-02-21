@@ -48,10 +48,12 @@ describe("Minibonder", function () {
         let one_minute = 60;
         let ten_days = 864000;
         let vest_period = one_minute;
-        let discount = 2777770;
+        let ftm_frg_pair = "0xedb14354733296B162775cBfB7032C3EC28A927E"
+        let discount = 1000;
         minibonder = await deployContract(
             "Minibonder",
             FRG.address,
+            ftm_frg_pair,
             vest_period,
             discount
         );
@@ -62,18 +64,19 @@ describe("Minibonder", function () {
     });
 
     it("Should revert due to no reserve", async function () {
-        let amountToVest = ethers.utils.parseUnits("100", 18);
+        let amountToVest = ethers.utils.parseUnits("1", 18);
         await expect(minibonder.vest({ value: amountToVest })).to.be.revertedWith("Minibonder: Reserve insufficient");
         await FRG.transfer(minibonder.address, ethers.utils.parseEther("1000000"));
     });
 
     it("Should successfully deposit", async function () {
-        let amount = ethers.utils.parseUnits("100", 18);
+        let amount = ethers.utils.parseUnits("1", 18);
         await minibonder.vest({ value: amount });
         let userVestedInfo = await minibonder.vestedBalances(deployer.address);
         let balanceVested = userVestedInfo.balance;
 
-        await expect(balanceVested).to.be.equal(amount.toString());
+        let expectedAmount = await minibonder.approximateReward(amount);
+        await expect(balanceVested).to.be.equal(expectedAmount.toString());
     });
 
     it("Should revert due to non-ownership of vest", async function () {
@@ -85,15 +88,14 @@ describe("Minibonder", function () {
     });
 
     it("Should succeed releasing from vest", async function () {
-        let userTokenBalance = await FRG.balanceOf(deployer.address);
+        let userEligible = await minibonder.vestedBalances(deployer.address);
+        userEligible = userEligible[1];
         await mineBlocks(60);
         await minibonder.release();
-        userTokenBalance = await FRG.balanceOf(deployer.address);
 
-        let amount = ethers.utils.parseUnits("27877.7", 18);
         let userBalance = await FRG.balanceOf(deployer.address);
 
-        await expect(userBalance).to.equal(amount);
+        await expect(userBalance).to.equal(userEligible);
     });
 
     it("Should do an FTM soft withdraw", async function () {
@@ -101,17 +103,6 @@ describe("Minibonder", function () {
         let amount = ethers.utils.parseUnits("450", 18);
 
         expect(await ethers.provider.getBalance(minibonder.address)).to.equal(0);
-    });
-
-    it("Should do an FRG soft withdraw", async function () {
-        let amount = ethers.utils.parseUnits("100", 18);
-        await minibonder.vest({ value: amount });
-        let userVestedInfo = await minibonder.vestedBalances(deployer.address);
-        let balanceVested = userVestedInfo.balance;
-
-        await minibonder.softWithdrawVestedAsset();
-        amount = ethers.utils.parseUnits("27877.7", 18);
-        expect(await FRG.balanceOf(minibonder.address)).to.equal(amount);
     });
 
     it("Should do an emergency withdraw", async function () {
